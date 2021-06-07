@@ -20,10 +20,18 @@ while True:
     imgRgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     results = hands.process(imgRgb)
 
-    #adds landmarks and hand connections to img
     if results.multi_hand_landmarks:
-        for handlms in results.multi_hand_landmarks:
-            mpDraw.draw_landmarks(img, handlms, mpHands.HAND_CONNECTIONS)
+        for handLms in results.multi_hand_landmarks:
+
+            #converts from the decimal prints the id and position
+            for id, lm in enumerate(handLms.landmark):
+                h, w, c = img.shape
+                cx, cy = int(lm.x+w), int(lm.y+h)
+                print(id, cx, cy)
+
+            # adds landmarks and hand connections to img
+            mpDraw.draw_landmarks(img, handLms, mpHands.HAND_CONNECTIONS)
+
     #supports smooth fps pt1
     cTime = time.time()
     fps = 1/(cTime-pTime)
