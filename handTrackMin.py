@@ -26,9 +26,12 @@ while True:
             #converts from the decimal prints the id and position
             for id, lm in enumerate(handLms.landmark):
                 h, w, c = img.shape
-                cx, cy = int(lm.x+w), int(lm.y+h)
+                cx, cy = int(lm.x*w), int(lm.y*h)
                 print(id, cx, cy)
-
+                
+                #putting circle over spcific point use to collect data 
+                if id == 4:
+                   cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
             # adds landmarks and hand connections to img
             mpDraw.draw_landmarks(img, handLms, mpHands.HAND_CONNECTIONS)
 
