@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import cv2
 import numpy as np
 import handTrackMod as htm
@@ -25,6 +27,8 @@ wScr, hScr = autopy.screen.size()
 click_switch = True
 keyboard = Controller()
 
+y0 = 0
+y1 = 0
 while True:
     #Find hand Landmarks
     success, img = cap.read()
@@ -62,18 +66,20 @@ while True:
     # ScrollING
     if fingers[1] == 1 and fingers[2] == 1 and fingers[3] == 1 and fingers[4] == 0:
         time0 = time.time()
-        y0 = detector.lmList[1][1:]
-        y1 =
+        y0 = detector.lmList[1][2]
 
         if y0 > y1:
-            pyautogui.scroll(175)
+            pyautogui.scroll(75)
+            print('up')
         if y0 < y1:
-            pyautogui.scroll(-175)
+            pyautogui.scroll(-75)
+            print('down')
 
         print(time0)
         print(y0)
         print(y1)
 
+        y1 = detector.lmList[1][2]
     #Frame Rate
     cTime = time.time()
     fps = 1 / (cTime - pTime)
