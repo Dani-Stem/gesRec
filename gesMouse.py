@@ -1,10 +1,7 @@
-from datetime import timedelta
-
 import cv2
 import numpy as np
 import handTrackMod as htm
 import time
-import autopy
 import pyautogui
 from pynput.keyboard import Key, Controller
 
@@ -22,8 +19,7 @@ cap = cv2.VideoCapture(0)
 cap.set(3, wCam)
 cap.set(4, hCam)
 detector = htm.handDetector(maxHands=1)
-wScr, hScr = autopy.screen.size()
-# print(wScr, hScr)
+wScr, hScr = pyautogui.size()
 click_switch = True
 keyboard = Controller()
 
@@ -54,7 +50,7 @@ while True:
         clocY = plocY + (y3 - plocY) / smoothening
 
         #Move Mouse
-        autopy.mouse.move(wScr - clocX, clocY)
+        pyautogui.moveTo(wScr - clocX, clocY)
         cv2.circle(img, (x1, y1), 15, (255, 0, 255), cv2.FILLED)
         plocX, plocY = clocX, clocY
 
@@ -80,6 +76,7 @@ while True:
         print(y1)
 
         y1 = detector.lmList[1][2]
+
     #Frame Rate
     cTime = time.time()
     fps = 1 / (cTime - pTime)

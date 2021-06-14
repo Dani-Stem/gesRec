@@ -1,0 +1,7 @@
+opencv-python
+mediapipe
+setuptools-rust
+pyautogui
+tk
+pynput
+
