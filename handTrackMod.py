@@ -1,70 +1,107 @@
 import cv2
 import mediapipe as mp
 import time
+import math
+import numpy as np
 
-class handDetec():
-    def __init__(self, mode=False, maxHands=2, detecCon=0.5, trackCon=0.5):
+
+class handDetector():
+    def __init__(self, mode=False, maxHands=2, detectionCon=0.5, trackCon=0.5):
         self.mode = mode
         self.maxHands = maxHands
-        self.detecCon = detecCon
+        self.detectionCon = detectionCon
         self.trackCon = trackCon
 
-        #creating hands visuals
         self.mpHands = mp.solutions.hands
-        self.hands = self.mpHands.Hands(self.mode, self.maxHands, self.detecCon, self.trackCon)
+        self.hands = self.mpHands.Hands(self.mode, self.maxHands,
+        self.detectionCon, self.trackCon)
         self.mpDraw = mp.solutions.drawing_utils
+        self.tipIds = [4, 8, 12, 16, 20]
 
     def findHands(self, img, draw=True):
-
-
-        imgRgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        self.results = self.hands.process(imgRgb)
-
+        imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        self.results = self.hands.process(imgRGB)
+        # print(results.multi_hand_landmarks)
+        #self.results.multi_hand_landmarks = [1]
         if self.results.multi_hand_landmarks:
             for handLms in self.results.multi_hand_landmarks:
                 if draw:
-
-                    # adds landmarks and hand connections to img
-                    self.mpDraw.draw_landmarks(img, handLms, self.mpHands.HAND_CONNECTIONS)
+                    self.mpDraw.draw_landmarks(img, handLms,
+                    self.mpHands.HAND_CONNECTIONS)
+        # else:
+        #     pass
 
         return img
 
     def findPosition(self, img, handNo=0, draw=True):
-        lmList = []
+        xList = []
+        yList = []
+        bbox = []
+        self.lmList = []
+        #self.results.multi_hand_landmarks = [1]
         if self.results.multi_hand_landmarks:
             myHand = self.results.multi_hand_landmarks[handNo]
-            #converts from the decimal prints the id and position
             for id, lm in enumerate(myHand.landmark):
+                # print(id, lm)
                 h, w, c = img.shape
                 cx, cy = int(lm.x * w), int(lm.y * h)
-                lmList.append([id, cx, cy])
+                xList.append(cx)
+                yList.append(cy)
+                # print(id, cx, cy)
+                self.lmList.append([id, cx, cy])
                 if draw:
                     cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
-            return lmList
+        # else:
+        #     pass
 
+            xmin, xmax = min(xList), max(xList)
+            ymin, ymax = min(yList), max(yList)
+            bbox = xmin, ymin, xmax, ymax
 
+            if draw:
+                cv2.rectangle(img, (xmin - 20, ymin - 20), (xmax + 20, ymax + 20),
+                (0, 255, 0), 2)
+
+        return self.lmList, bbox
+
+    def fingersUp(self):
+        fingers = []
+        # Thumb
+        if self.lmList[self.tipIds[0]][1] > self.lmList[self.tipIds[0] - 1][1]:
+            fingers.append(1)
+        else:
+            fingers.append(0)
+
+        # Fingers
+        for id in range(1, 5):
+
+            if self.lmList[self.tipIds[id]][2] < self.lmList[self.tipIds[id] - 2][2]:
+                fingers.append(1)
+            else:
+                fingers.append(0)
+
+            # totalFingers = fingers.count(1)
+
+        return fingers
 
 def main():
-    # supporting smooth fps pt0
     pTime = 0
     cTime = 0
-    # video input
-    cap = cv2.VideoCapture(2)
-    detec = handDetec()
-
+    cap = cv2.VideoCapture(0)
+    detector = handDetector()
     while True:
-        # grabs img converts to proper color values
         success, img = cap.read()
-        img = detec.findHands(img)
-        lmList = detec.findPosition(img)
+        img = detector.findHands(img)
+        lmList, bbox = detector.findPosition(img)
+        if len(lmList) != 0:
+            print(lmList[4])
 
-        #if len(lmList) != 0:
-        #    print(lmList[4])
-
-        # supports smooth fps pt1
         cTime = time.time()
         fps = 1 / (cTime - pTime)
         pTime = cTime
+
+        cv2.putText(img, str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3,
+        (255, 0, 255), 3)
 
         cv2.imshow("Image", img)
         cv2.waitKey(1)
