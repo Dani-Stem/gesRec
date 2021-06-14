@@ -25,6 +25,10 @@ keyboard = Controller()
 
 y0 = 0
 y1 = 0
+
+x_pos = 0
+prev_x_pos = 0
+
 while True:
     #Find hand Landmarks
     success, img = cap.read()
@@ -40,8 +44,9 @@ while True:
     fingers = detector.fingersUp()
 
     cv2.rectangle(img, (frameR, frameR), (wCam - frameR, hCam - frameR),(255, 0, 255), 2)
+
     #Index/second Finger Moving cursor
-    if (fingers[1] == 1 and fingers[2] == 1 and fingers[3] == 0):
+    if fingers == [0, 1, 1, 0, 0]:
         # 5. Convert Coordinates
         x3 = np.interp(x1, (frameR, wCam - frameR), (0, wScr))
         y3 = np.interp(y1, (frameR, hCam - frameR), (0, hScr))
@@ -55,27 +60,23 @@ while True:
         plocX, plocY = clocX, clocY
 
     #clicking w/ index finger & releasing the click w/ first 2 fingers
-    if fingers[1] == 1 and fingers[2] == 0 and fingers[3] == 0 and fingers[4] == 0:
+    if fingers == [0, 1, 0, 0, 0]:
         pyautogui.mouseDown(button='left')
         pyautogui.mouseUp(button='left')
 
     # ScrollING
-    if fingers[1] == 1 and fingers[2] == 1 and fingers[3] == 1 and fingers[4] == 0:
-        time0 = time.time()
-        y0 = detector.lmList[1][2]
+    if fingers == [0, 1, 1, 1, 0]:
+        x_pos = detector.lmList[1][2]
+        delta = prev_x_pos - x_pos
 
-        if y0 > y1:
-            pyautogui.scroll(75)
-            print('up')
-        if y0 < y1:
-            pyautogui.scroll(-75)
-            print('down')
+        if delta >= 5:
+            pyautogui.scroll(5)
+            prev_x_pos = x_pos
 
-        print(time0)
-        print(y0)
-        print(y1)
+        elif delta <= -5:
+            pyautogui.scroll(-5)
+            prev_x_pos = x_pos
 
-        y1 = detector.lmList[1][2]
 
     #Frame Rate
     cTime = time.time()
@@ -83,7 +84,7 @@ while True:
     pTime = cTime
     cv2.putText(img, str(int(fps)), (20, 50), cv2.FONT_HERSHEY_PLAIN, 3,
                 (255, 0, 0), 3)
-    #Display
+    # #Display
     cv2.imshow("Image", img)
     cv2.moveWindow("Image", 0, 0)
     # cv2.setWindowProperty("Image", cv2.WND_PROP_TOPMOST, 1)
