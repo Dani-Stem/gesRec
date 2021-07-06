@@ -1,13 +1,63 @@
+from datetime import timedelta
+import mediapipe
 import cv2
 import numpy as np
 import handTrackMod as htm
 import time
 import pyautogui
 from pynput.keyboard import Key, Controller
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from tkinter import *
+#
+chrome_options = Options()
+chrome_options.add_argument("user-data-dir=/home/dani/Desktop/apMirror")
+driver = webdriver.Chrome(options=chrome_options)
+
+
+
+driver.get("https://music.apple.com/library/playlist/p.b16GB61SK4GKNa")
+
+def playSong(userInput):
+    driver.find_element(By.CSS_SELECTOR, ".dt-search-box__input").click()
+    driver.find_element(By.CSS_SELECTOR, ".dt-search-box__input").send_keys(userInput)
+    time.sleep(0.5)
+    driver.find_element(By.CSS_SELECTOR, ".dt-search-box__input").send_keys(Keys.ENTER)
+    time.sleep(5)
+    driver.find_element_by_xpath("//*[@class='shelf-grid__list']/li/div/div/div/div/div/button").click()
+    song = driver.find_element_by_xpath("//*[@class='shelf-grid__list']/li/div/div/div/ul/li/span/span").text
+    artist = driver.find_element_by_xpath("//*[@class='shelf-grid__list']/li/div/div/div/ul/li[2]/a").text
+    return "Playing {0} by {1}".format(song, artist)
+
+time.sleep(10)
+
+# playSong("AP by Pop smoke")
+
+def resumeOrPause():
+    driver.find_element_by_xpath(
+        "//*[@class='web-chrome-playback-controls__directionals']/div[2]/button[2]").click()
+
+def nextSong():
+        driver.find_element_by_xpath(
+            "//*[@class='web-chrome-playback-controls__directionals']/div[2]/button[3]").click()
+
+def shuffle():
+        driver.find_element_by_xpath("//*[@class='button-content']/button[2]").click()
+
+
+def restart():
+        driver.find_element_by_xpath("//*[@class='web-chrome-playback-controls__directionals']/div[2]/button[1]").click()
+
+def minWin():
+        driver.minimize_window()
+
+time.sleep(10)
 
 ##########################
-wCam, hCam = 1920, 1080
-frameR = 100  # Frame Reduction
+wCam, hCam = 640, 460
+frameR = 80  # Frame Reduction
 smoothening = 7
 #########################
 
@@ -23,15 +73,16 @@ wScr, hScr = pyautogui.size()
 click_switch = True
 keyboard = Controller()
 
-y0 = 0
-y1 = 0
 
-x_pos = 0
-prev_x_pos = 0
+time0 = 0
+delta = 0
+
+timeSince = 0
 
 while True:
     #Find hand Landmarks
     success, img = cap.read()
+    if not success: continue
     img = detector.findHands(img)
     lmList, bbox = detector.findPosition(img)
     #Get the tip of the index and middle fingers
@@ -45,38 +96,34 @@ while True:
 
     cv2.rectangle(img, (frameR, frameR), (wCam - frameR, hCam - frameR),(255, 0, 255), 2)
 
-    #Index/second Finger Moving cursor
-    if fingers == [0, 1, 1, 0, 0]:
-        # 5. Convert Coordinates
-        x3 = np.interp(x1, (frameR, wCam - frameR), (0, wScr))
-        y3 = np.interp(y1, (frameR, hCam - frameR), (0, hScr))
-        # 6. Smoothen Values
-        clocX = plocX + (x3 - plocX) / smoothening
-        clocY = plocY + (y3 - plocY) / smoothening
+    if (fingers[1] == 1 and fingers[2] == 0 and fingers[3] == 0):
+        diff = time.time()-timeSince
+        if (diff>0.5):
+            shuffle()
+            print("yeeShuf")
+            timeSince = time.time()
 
-        #Move Mouse
-        pyautogui.moveTo(wScr - clocX, clocY)
-        cv2.circle(img, (x1, y1), 15, (255, 0, 255), cv2.FILLED)
-        plocX, plocY = clocX, clocY
+    if (fingers[1] == 1 and fingers[2] == 1 and fingers[3] == 0):
+        diff = time.time()-timeSince
+        if (diff>0.5):
+            resumeOrPause()
+            print("yeePP")
+            timeSince = time.time()
 
-    #clicking w/ index finger & releasing the click w/ first 2 fingers
-    if fingers == [0, 1, 0, 0, 0]:
-        pyautogui.mouseDown(button='left')
-        pyautogui.mouseUp(button='left')
+    if (fingers[1] == 1 and fingers[2] == 1 and fingers[3] == 1 and fingers[4] ==0):
+        diff = time.time()-timeSince
+        if (diff>0.5):
+            nextSong()
+            print("yeeNext")
+            timeSince = time.time()
 
-    # ScrollING
-    if fingers == [0, 1, 1, 1, 0]:
-        x_pos = detector.lmList[1][2]
-        delta = prev_x_pos - x_pos
 
-        if delta >= 5:
-            pyautogui.scroll(5)
-            prev_x_pos = x_pos
-
-        elif delta <= -5:
-            pyautogui.scroll(-5)
-            prev_x_pos = x_pos
-
+    if (fingers[1] == 0 and fingers[2] == 0 and fingers[3] == 0 and fingers[4] == 0):
+        diff = time.time()-timeSince
+        if (diff>0.5):
+            minWin()
+            print("MinWin")
+            timeSince = time.time()
 
     #Frame Rate
     cTime = time.time()
@@ -84,8 +131,10 @@ while True:
     pTime = cTime
     cv2.putText(img, str(int(fps)), (20, 50), cv2.FONT_HERSHEY_PLAIN, 3,
                 (255, 0, 0), 3)
-    # #Display
+    #Display
     cv2.imshow("Image", img)
-    cv2.moveWindow("Image", 0, 0)
+    cv2.moveWindow("Image", 1800, 0)
     # cv2.setWindowProperty("Image", cv2.WND_PROP_TOPMOST, 1)
     cv2.waitKey(1)
+
+
